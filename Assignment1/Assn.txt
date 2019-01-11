@@ -1,0 +1,94 @@
+%Take Data2 for this question. 
+%Partition each column into four sets of equal widths of values. Assign these intervals as values 0, 1, 2, and 3 and replace each value by its corresponding interval value. 
+
+Data = table2array(Data2(:,1:6));
+binSize = floor(size(Data,1)/4);
+c = (0:binSize:308);
+c(1) = 1;
+
+% partitioning 1st coloumn 
+col_1 = sort(Data(:,1));
+edges1 = col_1(c);
+edges1(size(edges1,1)) = max(col_1);
+col_1 = discretize(sort(Data(:,1)),edges1,[0,1,2,3]);
+
+% partitioning 2nd coloumn 
+col_2 = sort(Data(:,2));
+edges2 = col_2(c);
+edges2(size(edges2,1)) = max(col_2);
+col_2 = discretize(sort(Data(:,2)),edges2,[0,1,2,3]);
+
+% partitioning 3rd coloumn 
+col_3 = sort(Data(:,3));
+edges3 = col_3(c);
+edges3(size(edges3,1)) = max(col_3);
+col_3 = discretize(sort(Data(:,3)),edges3,[0,1,2,3]);
+
+% partitioning 4th coloumn 
+col_4 = sort(Data(:,4));
+edges4 = col_4(c);
+edges4(size(edges4,1)) = max(col_4);
+col_4 = discretize(sort(Data(:,4)),edges4,[0,1,2,3]);
+
+% partitioning 5th coloumn 
+col_5 = sort(Data(:,5));
+edges5 = col_5(c);
+edges5(size(edges5,1)) = max(col_5);
+col_5 = discretize(sort(Data(:,5)),edges5,[0,1,2,3]);
+
+% partitioning 6th coloumn 
+col_6 = sort(Data(:,6));
+edges6 = col_6(c);
+edges6(size(edges6,1)) = max(col_6);
+col_6 = discretize(sort(Data(:,6)),edges6,[0,1,2,3]);
+
+
+edges = [edges1 edges2 edges3 edges4 edges5 edges6];
+Header = Data2.Properties.VariableNames;
+for j = 1:6
+    fprintf('Boundaries for - %s\n',Header{j});
+    for i = 1:4
+        fprintf('%f - %f : %d \n',edges(i,j),edges(i + 1,j),i-1);
+    end
+end
+
+new_Data = [col_1 col_2 col_3 col_4 col_5 col_6 ];
+label = sort(table2array(Data2(:,7)));
+fprintf('\nFor Decision tree with 10 minimum records per leaf\n');
+
+for i = 1:5
+    fprintf('For %d random run\n',i);
+    [trainInd,valInd,testInd] = dividerand(310,210,0,100);
+    train_Data2 = new_Data(trainInd,:);
+    test_Data2  = new_Data(testInd,:);
+    pred = train_Data2;
+    train_label = label(trainInd,:);
+    tree_Node10= fitctree(pred,train_label,'MinLeafSize',10);
+
+    test_pred = test_Data2;
+    test_predict = predict(tree_Node10,test_pred);
+    test_label = label(testInd,:);
+
+    idx1 = (test_label == 'Normal');
+    idx2 = (test_label == 'Abnormal');
+    p = length(test_label(idx1));
+    n = length(test_label(idx2));
+    N = p+n;
+    tp = sum(test_label(idx1)==test_predict(idx1));
+    tn = sum(test_label(idx2)==test_predict(idx2));
+    fp = n-tn;
+    fn = p-tp;
+    accuracy = (tp+tn)/N;
+    acc(i) = accuracy;
+    precision = tp/(tp+fp);
+    prec(i) = precision;
+    recall = tp/p;
+    rec(i) = recall;
+    fprintf('accuracy =  %f \t precision = %f \t recall = %f\n\n',accuracy,precision,recall);
+end
+view(tree_Node10,'Mode','graph')
+%averages and standard deviations
+fprintf('Average and standard Daviation calculation for transformed data\n')
+fprintf('average of accuracy =  %f \t average of precision = %f \t average of recall = %f\n', mean(acc),mean(prec),mean(recall));
+fprintf('std of accuracy =  %f \t     std of precision = %f \t     std ofrecall = %f\n\n',std(acc),std(prec),std(rec));
+
